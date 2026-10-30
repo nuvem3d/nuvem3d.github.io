@@ -1,0 +1,35 @@
+Visualizador LAS
+Copyright (c) 2026 Flavio Boscatto. Todos os direitos reservados.
+Copyright (c) 2026 Flavio Boscatto. All rights reserved.
+
+Este software e seu código-fonte são de propriedade exclusiva do autor.
+O código é publicado neste repositório apenas para que o programa possa ser
+hospedado e consultado. A publicação NÃO concede licença de uso do código.
+
+Sem autorização prévia e por escrito do autor, é proibido:
+
+  1. copiar, reproduzir ou redistribuir o código-fonte, no todo ou em parte;
+  2. modificar o código ou criar obras derivadas a partir dele;
+  3. publicar o programa, ou versão modificada dele, em outro endereço ou serviço;
+  4. vender, sublicenciar ou usar o código para fins comerciais;
+  5. remover ou alterar esta nota e a indicação de autoria.
+
+É permitido usar o programa pelo navegador, no endereço oficial publicado pelo
+autor, para visualizar e medir as próprias nuvens de pontos. Os arquivos abertos
+permanecem no computador de quem os abre e não são enviados a nenhum servidor.
+
+Componentes de terceiros mantêm suas próprias licenças:
+  - laz-perf (Apache License 2.0), usado para ler arquivos LAZ.
+
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE QUALQUER
+TIPO. O AUTOR NÃO SE RESPONSABILIZA POR DANOS DECORRENTES DO USO. As medidas
+exibidas não substituem levantamento topográfico ou responsabilidade técnica
+do profissional habilitado.
+
+Para pedir autorização de uso: flavioboscatto@gmail.com
+
+----------------------------------------------------------------------------
+English summary: All rights reserved. The source code is published only for
+hosting and viewing; no license to copy, modify, redistribute or use it
+commercially is granted without the author's prior written permission.
+Using the web app at the official address is allowed.

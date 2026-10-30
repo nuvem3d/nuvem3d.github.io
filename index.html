@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visualizador LAS</title>
+  <meta name="description" content="Visualize e meça nuvens de pontos LAS/LAZ direto no navegador. Os arquivos não saem do seu computador." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <meta name="theme-color" content="#0e1013" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f6f8b'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='9' cy='20' r='2'/%3E%3Ccircle cx='15' cy='14' r='2'/%3E%3Ccircle cx='21' cy='18' r='2'/%3E%3Ccircle cx='25' cy='10' r='2'/%3E%3Ccircle cx='13' cy='24' r='1.6'/%3E%3Ccircle cx='19' cy='24' r='1.6'/%3E%3C/g%3E%3C/svg%3E" />
+  <script>try { document.documentElement.dataset.theme = localStorage.getItem("vlas.tema") === "claro" ? "claro" : "escuro"; } catch (e) { document.documentElement.dataset.theme = "escuro"; }</script>
+  <script type="module" crossorigin src="./assets/index-BM3-SUDK.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D2Zq9bNW.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" /><g><circle cx="9" cy="20" r="2" /><circle cx="15" cy="14" r="2" /><circle cx="21" cy="18" r="2" /><circle cx="25" cy="10" r="2" /><circle cx="13" cy="24" r="1.6" /><circle cx="19" cy="24" r="1.6" /></g></svg>
+      <div>
+        <h1>Visualizador LAS</h1>
+        <p>Nuvens LAS/LAZ no seu navegador. Os arquivos não saem do seu computador.</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <button id="btn-install" type="button" title="Instala o programa neste computador; abre sem internet" hidden>Instalar</button>
+      <button id="btn-help" type="button" title="Ajuda e atalhos (F1)">Ajuda (F1)</button>
+      <button id="btn-theme" type="button" title="Alternar entre tema escuro e claro">Tema claro</button>
+      <span class="version" id="version"></span>
+    </div>
+  </header>
+
+  <nav class="toolbar needs-cloud" aria-label="Ferramentas da vista">
+    <div class="tb-group">
+      <span class="tb-label">Cor dos pontos</span>
+      <select id="sel-mode" aria-label="Cor dos pontos"></select>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Vistas</span>
+      <button type="button" data-view="topo" title="Tecla 1">Topo</button>
+      <button type="button" data-view="iso" title="Tecla 2">Iso</button>
+      <button type="button" data-view="frente" title="Tecla 3">Frente</button>
+      <button type="button" data-view="lado" title="Tecla 4">Lado</button>
+      <button id="btn-fit" type="button" title="Tecla F">Enquadrar</button>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Fundo</span>
+      <div class="bgs" role="radiogroup" aria-label="Cor de fundo">
+        <button type="button" data-bg="preto" role="radio"><i style="background:#000"></i>Preto</button>
+        <button type="button" data-bg="cinza" role="radio"><i style="background:rgb(72,76,82)"></i>Cinza</button>
+        <button type="button" data-bg="branco" role="radio"><i style="background:#fff"></i>Branco</button>
+      </div>
+    </div>
+    <div class="tb-group">
+      <span class="tb-label">Exportar</span>
+      <button id="btn-export-img" type="button" title="Baixa uma imagem PNG ou JPG da vista, com as medidas">Imagem…</button>
+      <button id="btn-export-txt" type="button" title="Baixa um relatório de texto com todas as medidas">Relatório TXT</button>
+    </div>
+  </nav>
+
+  <div class="app">
+    <aside class="panel">
+      <section>
+        <h2>1. Dados da nuvem</h2>
+        <button id="btn-open" class="primary" type="button">Abrir LAS/LAZ…</button>
+        <input id="file-input" type="file" accept=".las,.laz" multiple hidden />
+        <div id="info" class="info"><p class="muted">Nenhuma nuvem aberta.</p></div>
+      </section>
+
+      <section class="needs-cloud">
+        <h2>2. Visualização</h2>
+        <label class="row">Tamanho do ponto <output id="out-size">1</output></label>
+        <input id="rng-size" type="range" min="1" max="20" value="1" />
+        <label class="row">Densidade <output id="out-dens">100%</output></label>
+        <input id="rng-dens" type="range" min="5" max="100" value="100" />
+        <label class="row">Exagero vertical
+          <span class="num"><input id="num-exag" type="number" min="1" max="30" step="0.5" value="1" /> ×</span>
+        </label>
+        <input id="rng-exag" type="range" min="10" max="300" value="10" />
+      </section>
+
+      <section class="needs-cloud">
+        <h2>3. Recortes</h2>
+        <p class="muted small">Só escondem pontos na vista; a nuvem não é alterada. Valem para o OSNAP e para a imagem. As medidas continuam visíveis.</p>
+        <label class="check"><input id="chk-alt" type="checkbox" /> Altitude</label>
+        <label class="row">Z mínimo <output id="out-alo"></output></label>
+        <input id="rng-alo" type="range" min="0" max="1" step="0.01" value="0" />
+        <label class="row">Z máximo <output id="out-ahi"></output></label>
+        <input id="rng-ahi" type="range" min="0" max="1" step="0.01" value="1" />
+        <label class="check"><input id="chk-slice" type="checkbox" /> Fatia</label>
+        <input id="rng-sc" type="range" min="0" max="1" step="0.01" value="0" />
+        <label class="row">Espessura <span class="num"><input id="num-st" type="number" min="0.01" step="0.05" value="0.5" /> m</span></label>
+        <div class="two">
+          <button id="btn-sprev" type="button" title="Fatia anterior (desce uma espessura)">◀</button>
+          <button id="btn-snext" type="button" title="Próxima fatia (sobe uma espessura)">▶</button>
+        </div>
+        <p id="out-slice" class="muted small"></p>
+        <p class="row sub">Caixa 3D</p>
+        <div class="two">
+          <button id="btn-box" type="button">Criar caixa</button>
+          <select id="sel-boxmode" aria-label="O que fica visível"><option value="dentro">Mantém dentro</option><option value="fora">Mantém fora</option></select>
+        </div>
+        <label class="row">Giro <span class="num"><input id="num-yaw" type="number" step="5" value="0" disabled /> °</span></label>
+        <p class="muted small">Arraste os quadrados da caixa: faces mudam um lado; cantos brancos mudam dois.</p>
+        <p class="row sub">Polígono em planta</p>
+        <div class="two">
+          <button id="btn-poly" type="button" aria-pressed="false">Desenhar polígono</button>
+          <select id="sel-polymode" aria-label="Efeito do polígono"><option value="manter">Mantém dentro</option><option value="excluir">Exclui dentro</option></select>
+        </div>
+        <ul id="poly-list" class="meas-list"></ul>
+        <div class="two">
+          <button id="btn-clip-inv" type="button" title="Troca dentro/fora da caixa e dos polígonos">Inverter</button>
+          <button id="btn-clip-clear" type="button">Limpar recortes</button>
+        </div>
+      </section>
+
+      <section class="needs-cloud">
+        <h2>4. Medições</h2>
+        <div class="tools">
+          <button type="button" data-tool="ponto" aria-pressed="false">Ponto</button>
+          <button type="button" data-tool="linha" aria-pressed="false">Linha</button>
+          <button type="button" data-tool="area" aria-pressed="false">Área</button>
+        </div>
+        <button id="btn-snap" type="button" aria-pressed="true" title="Encaixa no ponto real mais próximo do cursor (F3)">OSNAP 3D (F3)</button>
+        <p class="row sub" id="meas-hint"></p>
+        <p class="row sub">Perfil (só visualização)</p>
+        <button id="btn-profile" type="button" aria-pressed="false" title="Dois cliques definem o eixo; abre o gráfico estação × Z">Perfil…</button>
+        <label class="row">Largura da faixa <span class="num"><input id="num-pw" type="number" min="0.05" step="0.5" value="5" /> m</span></label>
+      </section>
+
+      <section class="needs-cloud">
+        <h2>5. Observador</h2>
+        <label class="check"><input id="chk-obs" type="checkbox" /> Mostrar observador</label>
+        <button id="btn-obs-place" type="button">Colocar / mover</button>
+        <label class="row">Altura dos olhos
+          <span class="num"><input id="num-eye" type="number" min="0.3" max="5" step="0.1" value="1.7" /> m</span>
+        </label>
+        <button id="btn-obs-view" type="button" disabled>Ver do observador</button>
+        <p class="row sub" id="obs-hint">Clique em “Colocar / mover” e depois na nuvem.</p>
+      </section>
+
+      <section class="help">
+        <p><b>Mouse:</b> botão esquerdo gira · direito, do meio ou Shift + esquerdo desloca · roda aproxima · duplo clique do meio enquadra.</p>
+        <p><a href="#" id="lnk-help">Ajuda completa (F1)</a></p>
+        <p><b>Teclas:</b> F enquadra · 1 Topo · 2 Iso · 3 Frente · 4 Lado · F3 liga/desliga o OSNAP · Enter fecha a área · Backspace desfaz · Esc cancela / sai da vista do observador.</p>
+      </section>
+    </aside>
+
+    <main class="viewport" id="viewport">
+      <div id="legend" class="legend legend-float"></div>
+      <div id="drop" class="drop">
+        <div class="drop-box">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 30V10m0 0-7 7m7-7 7 7" /><path d="M10 30v6a2 2 0 0 0 2 2h24a2 2 0 0 0 2-2v-6" /></svg>
+          <p class="big">Solte aqui seus arquivos LAS ou LAZ</p>
+          <p>ou</p>
+          <button id="btn-open2" class="primary" type="button">Escolher arquivos</button>
+          <p class="small">Vários arquivos da mesma área viram uma nuvem só. Tudo é processado no seu computador; nada é enviado.</p>
+        </div>
+      </div>
+      <div id="progress" class="progress" hidden>
+        <div class="progress-box">
+          <p id="prog-text">Lendo…</p>
+          <div class="bar"><div id="prog-bar"></div></div>
+          <button id="btn-cancel" type="button">Cancelar</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel boxpanel" id="measure-box">
+      <section>
+        <h2>Caixa de medidas</h2>
+        <ul id="meas-list" class="meas-list"></ul>
+        <p id="meas-empty" class="muted small">Nenhuma medida ainda. Escolha Ponto, Linha ou Área e clique na nuvem.</p>
+      </section>
+      <section id="meas-detail-sec" hidden>
+        <div id="meas-detail" class="info"></div>
+        <div class="two">
+          <button id="btn-goto" type="button">Ir para</button>
+          <button id="btn-del" type="button">Excluir</button>
+        </div>
+        <p class="muted small">Duplo clique, lápis ✎, F2 ou botão direito (na lista ou sobre a medida na vista) renomeia · Del exclui. As medidas valem só nesta sessão.</p>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="status">
+    <span id="st-points">Pronto.</span>
+    <span id="st-msg" class="msg"></span>
+    <span id="st-snap" class="muted"></span>
+    <span id="st-xyz" class="xyz" title="Coordenada da nuvem sob o cursor"></span>
+  </footer>
+
+  <dialog id="dlg-help">
+    <div class="help-head">
+      <h3>Ajuda — Visualizador LAS</h3>
+      <button id="btn-help-close" type="button" aria-label="Fechar a ajuda">Fechar</button>
+    </div>
+    <div class="help-body">
+      <h4>Abrir uma nuvem</h4>
+      <p>Arraste arquivos <b>LAS</b> ou <b>LAZ</b> para a vista ou use “Abrir LAS/LAZ…”. Vários arquivos da mesma área viram uma nuvem só. Acima de 25 milhões de pontos o programa pergunta se carrega uma amostra uniforme ou a nuvem completa (mostrando a memória estimada). Os arquivos são lidos no seu computador; nada é enviado. O LAZ é descompactado por blocos, então arquivos grandes não precisam caber inteiros na memória, e ao dar zoom numa amostra o programa relê a região e acrescenta os pontos que faltavam.</p>
+
+      <h4>Mouse</h4>
+      <table class="keys">
+        <tr><td>Botão esquerdo, arrastar</td><td>Gira a vista</td></tr>
+        <tr><td>Botão direito, do meio ou Shift + esquerdo, arrastar</td><td>Desloca a vista</td></tr>
+        <tr><td>Roda</td><td>Aproxima e afasta (a densidade de pontos aumenta com o zoom)</td></tr>
+        <tr><td>Caixinha ao lado do arquivo (item 1, com 2 ou mais arquivos)</td><td>Mostra / oculta aquele arquivo na vista</td></tr>
+        <tr><td>Duplo clique do botão do meio</td><td>Enquadra a nuvem</td></tr>
+      </table>
+
+      <h4>Teclas</h4>
+      <table class="keys">
+        <tr><td><kbd>F1</kbd></td><td>Abre e fecha esta ajuda</td></tr>
+        <tr><td><kbd>F</kbd></td><td>Enquadra a nuvem</td></tr>
+        <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></td><td>Vistas Topo, Iso, Frente e Lado</td></tr>
+        <tr><td><kbd>F3</kbd></td><td>Liga e desliga o OSNAP 3D</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Fecha a área (ou o polígono de recorte) em desenho</td></tr>
+        <tr><td><kbd>Backspace</kbd></td><td>Desfaz o último ponto</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Cancela a medição ou o desenho em andamento; sai da vista do observador</td></tr>
+        <tr><td><kbd>F2</kbd> · <kbd>Del</kbd></td><td>Renomeia · exclui a medida selecionada (renomear também: botão direito sobre a medida na vista)</td></tr>
+        <tr><td><kbd>O</kbd></td><td>Coloca / move o observador (na vista do observador, continua nela)</td></tr>
+      </table>
+
+      <h4>Medições</h4>
+      <p><b>Ponto:</b> mostra E, N e Z. <b>Linha:</b> dois cliques; mostra a distância inclinada, a horizontal, ΔX, ΔY, ΔZ, inclinação, ângulo vertical e azimute (a partir do Norte, sentido horário), com os triângulos no plano XY e vertical desenhados. <b>Área:</b> cliques nos vértices e Enter para fechar; mostra a área no plano XY, a área 3D pelo plano médio do polígono e os perímetros 2D e 3D.</p>
+      <p><b>OSNAP 3D (F3):</b> ligado, o clique encaixa no ponto real da nuvem mais próximo do cursor (nunca uma média). Desligado, vale a superfície visível sob o cursor.</p>
+      <p>As medidas usam as coordenadas absolutas do arquivo, em metros, com 3 casas (áreas com 2). O exagero vertical é só visual e não altera nenhum valor. As medidas ficam na “Caixa de medidas” (renomear, ocultar, excluir, “Ir para”) e só existem durante a sessão.</p>
+
+      <h4>Recortes</h4>
+      <p>Não destrutivos: escondem pontos sem apagá-los. <b>Altitude</b> (Z mínimo e máximo), <b>Fatia</b> (espessura com ◀ ▶ para subir e descer), <b>Caixa 3D</b> com alças e <b>Polígono em planta</b> (mantém ou exclui o que está dentro). “Inverter” troca dentro e fora; “Limpar recortes” remove todos. O OSNAP só encaixa em pontos visíveis; as medidas continuam aparecendo mesmo fora do recorte.</p>
+
+      <h4>Perfil</h4>
+      <p>Em “Medições → Perfil…”, dois cliques definem o eixo e a largura da faixa vem do campo ao lado. Abre um gráfico estação × Z dos pontos da faixa, na cor do modo atual, com exagero vertical, zoom e arrasto. Respeita os recortes ativos. É só visualização.</p>
+
+      <h4>Observador</h4>
+      <p>Coloca um observador na nuvem, com altura dos olhos ajustável. “Ver do observador” mostra a vista de dentro, em 360°; arraste para girar e Esc para sair. Dentro dela, “Colocar / mover” (ou a tecla O) e um clique levam o observador para outro ponto sem sair da vista, bom para entrar embaixo de árvores.</p>
+
+      <h4>Saídas</h4>
+      <p>As únicas saídas do programa são a <b>imagem PNG ou JPG</b> da vista, com medidas, rótulos e eixos (botão “Imagem…” na barra), e o <b>relatório TXT</b> das medidas. O navegador baixa os arquivos; o programa não grava projeto nem exporta a nuvem.</p>
+
+      <h4>Sobre</h4>
+      <p>Visualizador LAS <span id="help-version"></span>, de Flavio Boscatto (Agrimensura). Todos os direitos reservados; o uso do programa neste endereço é livre (veja o arquivo LICENSE no repositório). A leitura de LAZ usa o <i>laz-perf</i> (Apache-2.0). Tudo roda no seu navegador: não há servidor, upload nem telemetria. Depois da primeira visita o programa abre sem internet, e quando o navegador oferece a instalação aparece o botão “Instalar” no cabeçalho, que cria um aplicativo com ícone. As medidas não substituem levantamento topográfico nem a responsabilidade técnica do profissional habilitado.</p>
+      <p><b>Ícone para o atalho:</b> <a href="/visualizador-las.ico" download>baixar o ícone do Visualizador LAS (.ico)</a>. Guarde o arquivo numa pasta fixa (por exemplo, Documentos). No atalho da área de trabalho: botão direito → Propriedades → aba “Documento da Web” → “Alterar ícone…” → Procurar → escolha o arquivo.</p>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-img">
+    <form method="dialog">
+      <h3>Exportar imagem</h3>
+      <p class="muted small">A imagem mostra a vista como está agora, com as medidas, os rótulos e os eixos. Nada é enviado: o navegador só baixa o arquivo.</p>
+      <label class="row">Formato
+        <select id="sel-img-fmt"><option value="png">PNG (sem perdas)</option><option value="jpg">JPG (menor)</option></select>
+      </label>
+      <label class="row">Tamanho
+        <select id="sel-img-scale"><option value="1">1× (tamanho da tela)</option><option value="2" selected>2×</option><option value="4">4× (pode ser limitado pelo navegador)</option></select>
+      </label>
+      <label class="check"><input id="chk-img-list" type="checkbox" checked /> Incluir quadro com a lista de medidas</label>
+      <div class="choices">
+        <button id="btn-img-ok" class="primary" value="ok">Baixar imagem</button>
+        <button id="btn-img-cancel" value="cancelar" type="button">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-cap">
+    <form method="dialog">
+      <h3>Nuvem grande</h3>
+      <p id="cap-text"></p>
+      <div class="choices">
+        <button value="amostra" class="primary">Carregar amostra</button>
+        <button value="completa">Carregar completa</button>
+        <button value="cancelar">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+</body>
+</html>
